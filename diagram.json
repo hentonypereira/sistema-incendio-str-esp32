@@ -1,0 +1,212 @@
+{
+  "version": 1,
+  "author": "Projeto STR",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcd",
+      "top": -180,
+      "left": 0,
+      "attrs": {
+        "pins": "i2c"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_incendio",
+      "top": -60,
+      "left": 400,
+      "attrs": {
+        "color": "red",
+        "label": "INCENDIO"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_alerta",
+      "top": 20,
+      "left": 400,
+      "attrs": {
+        "color": "yellow",
+        "label": "ALERTA"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_sprinkler",
+      "top": 100,
+      "left": 400,
+      "attrs": {
+        "color": "blue",
+        "label": "SPRINKLER"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_rele_energia",
+      "top": 180,
+      "left": 400,
+      "attrs": {
+        "color": "purple",
+        "label": "CORTE ENERGIA"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "buzzer",
+      "top": 260,
+      "left": 375,
+      "rotate": -270,
+      "attrs": {
+        "volume": "0.1"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_emergencia",
+      "top": 270,
+      "left": -120,
+      
+      "attrs": {
+        "color": "red",
+        "label": "EMERGENCIA"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_reset",
+      "top": 270,
+      "left": 80,
+      
+      "attrs": {
+        "color": "green",
+        "label": "RESET"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "lcd:GND",
+      "esp:GND.1",
+      "black",
+      [ "h-50", "v220" ]
+    ],
+    [
+      "lcd:VCC",
+      "esp:5V",
+      "red",
+      [ "h-40", "v340" ]
+    ],
+    [
+      "lcd:SDA",
+      "esp:21",
+      "green",
+      [ "h-30", "v120", "h140", "v90" ]
+    ],
+    [
+      "lcd:SCL",
+      "esp:22",
+      "blue",
+      [ "h-20", "v100", "h140", "v80" ]
+    ],
+
+    [
+      "led_incendio:A",
+      "esp:2",
+      "red",
+      [ "v30","h-250", "v-40" ]
+    ],
+    [
+      "led_incendio:C",
+      "esp:GND.3",
+      "black",
+      [ "v10" ,"h-145", "v30" ]
+    ],
+
+    [
+      "led_alerta:A",
+      "esp:4",
+      "yellow",
+      ["v30","h-170", "v-40" ]
+    ],
+    [
+      "led_alerta:C",
+      "esp:GND.3",
+      "black",
+      ["v10" ,"h-145", "v30"]
+    ],
+
+    [
+      "led_sprinkler:A",
+      "esp:18",
+      "blue",
+      [  "v30","h-180", "v-40" ]
+    ],
+    [
+      "led_sprinkler:C",
+      "esp:GND.3",
+      "black",
+      [ "v15","h-145", "v-5"  ]
+    ],
+
+    [
+      "led_rele_energia:A",
+      "esp:19",
+      "purple",
+      [ "v30","h-200", "v-40" ]
+    ],
+    [
+      "led_rele_energia:C",
+      "esp:GND.3",
+      "black",
+      [ "v20","h-145", "v-10" ]
+    ],
+
+    [
+      "buzzer:1",
+      "esp:GND.3",
+      "black",
+      [ "h-100", "v-60" ]
+    ],
+    [
+      "buzzer:2",
+      "esp:17",
+      "red",
+      [ "h-160", "v-40" ]
+    ],
+
+    [
+      "btn_emergencia:1.l",
+      "esp:32",
+      "red",
+      [ "h-15","v80" ]
+    ],
+    [
+      "btn_emergencia:2.l",
+      "esp:GND.1",
+      "black",
+      [  "h-10","v80" ]
+    ],
+
+    [
+      "btn_reset:1.l",
+      "esp:33",
+      "green",
+      [  "h-90","v80" ]
+    ],
+    [
+      "btn_reset:2.l",
+      "esp:GND.1",
+      "black",
+      [  "h-100","v80" ]
+    ]
+  ]
+}
