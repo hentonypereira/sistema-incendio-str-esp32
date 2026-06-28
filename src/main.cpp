@@ -34,6 +34,7 @@ const char* PASSWORD = "";
 WiFiServer server(8080);
 
 // LCD I2C: endereco 0x27, 16 colunas, 2 linhas
+// 0x27 é o endereço do LCD no barramento I2C.
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 // ======================================================
@@ -48,6 +49,7 @@ enum EstadoSistema {
 
 // O volatile avisa ao compilador que essas variáveis podem mudar fora do fluxo normal daquela task.
 
+// Variaveis globais utilizadas no sistema
 // Variaveis atualizadas pela recepcao TCP
 volatile float temperatura = 25.0;
 
@@ -59,6 +61,7 @@ volatile EstadoSistema estadoAtual = NORMAL;
 
 // Flag para emergencia manual
 volatile bool emergenciaManual = false;
+
 
 // Variáveis que guardam a referência/handle para o semáforo
 SemaphoreHandle_t semEmergencia;
@@ -108,38 +111,63 @@ void IRAM_ATTR ISRBotaoReset()
 
 void TaskTCP(void *pvParameters)
 {
-  WiFiClient client;
+  // Cria o objeto que representa a conexão TCP com o injetor.py.
+  WiFiClient client; 
 
-  TickType_t xLastWakeTime = xTaskGetTickCount();
+  // Essa função retorna o número atual de ticks desde que o sistema começou a rodar.  
+  // Guarda o instante de referência da última ativação da task.
+  TickType_t xLastWakeTime = xTaskGetTickCount(); 
+
+  // Define que a task deve ter período de 50 ms.
   const TickType_t xPeriod = pdMS_TO_TICKS(50);
 
   for (;;)
   {
+    // Verifica se ainda não existe um cliente TCP válido
+    // ou se o cliente anterior foi desconectado.
     if (!client || !client.connected())
     {
+      // Verifica se há algum cliente TCP tentando se conectar ao servidor.
+      // Essa chamada não fica esperando uma conexão; se não houver cliente,
+      // retorna um objeto inválido/vazio e a task tenta novamente no próximo ciclo.
       client = server.available();
     }
 
+    // Verifica se existe um cliente TCP válido
+    // e se ele continua conectado ao ESP32.
     if (client && client.connected())
     {
+      // Enquanto houver dados disponíveis enviados pelo cliente TCP,
+      // a task continua lendo os pacotes recebidos.
+      // client.available() verifica se há dados não lidos no buffer TCP.
       while (client.available())
       {
+        // Lê uma linha recebida pela conexão TCP até encontrar '\n'.
+        // Exemplo de linha recebida: T:25.0,S:3.45
         String linha = client.readStringUntil('\n');
 
-        // Remove espaços, quebras de linha e caracteres extras
+        // Remove espaços, quebras de linha e caracteres extras.
         linha.trim();
 
         // Pacote esperado:
         // T:25.0,S:3.45
+        // Extração de informações do pacote recebido.
         if (linha.startsWith("T:"))
         {
+          // Procura a posição da vírgula que separa temperatura e fumaça.
           int idx = linha.indexOf(',');
 
+          // Se a vírgula foi encontrada em uma posição válida,
+          // o pacote pode ser interpretado.
           if (idx > 0)
           {
+            // Extrai a temperatura da string.
+            // substring(2, idx) pega o trecho depois de "T:" até antes da vírgula.
             temperatura =
               linha.substring(2, idx).toFloat();
 
+            // Extrai a fumaça da string.
+            // idx + 3 pula a vírgula e o trecho "S:".
             fumaca =
               linha.substring(idx + 3).toFloat();
 
@@ -157,8 +185,9 @@ void TaskTCP(void *pvParameters)
             // Serial.print(fumaca);
             // Serial.println(" %/m");
 
-            // Resposta TCP enviada ao injetor.py
-            client.println("OK");
+            // Não é enviada resposta "OK" ao injetor.py.
+            // O injetor atua como uma fonte de dados simulada,
+            // equivalente a sensores enviando medições ao ESP32.
           }
           else
           {
@@ -167,16 +196,20 @@ void TaskTCP(void *pvParameters)
             // ==================================================
             // Serial.println("ERRO: pacote sem virgula");
 
-            // Resposta TCP enviada ao injetor.py
-            client.println("ERRO");
+            // Não é enviada resposta "ERRO" ao injetor.py.
+            // Pacotes inválidos são simplesmente ignorados nesta versão.
           }
         }
       }
     }
 
+    // Bloqueia a task até o próximo período de execução.
+    // Como xPeriod = 50 ms, a TaskTCP tenta executar a cada 50 ms.
+    // Aguarda até o próximo ciclo de 50 ms, mantendo a periodicidade da task.
+    // xLastWakeTime é atualizado pela própria função.
     vTaskDelayUntil(&xLastWakeTime, xPeriod);
   }
-}
+} 
 
 // ======================================================
 // T3 - MAQUINA DE ESTADOS
@@ -185,7 +218,7 @@ void TaskTCP(void *pvParameters)
 void TaskEstado(void *pvParameters)
 {
   TickType_t xLastWakeTime = xTaskGetTickCount();
-  const TickType_t xPeriod = pdMS_TO_TICKS(500);
+  const TickType_t xPeriod = pdMS_TO_TICKS(100);
 
   for (;;)
   {
@@ -300,43 +333,63 @@ void TaskBotaoReset(void *pvParameters)
 void TaskLCD(void *pvParameters)
 {
   TickType_t xLastWakeTime = xTaskGetTickCount();
-  const TickType_t xPeriod = pdMS_TO_TICKS(1000);
+
+  // Atualiza o LCD a cada 250 ms.
+  // Antes estava 1000 ms, o que causava atraso visível na atualização.
+  const TickType_t xPeriod = pdMS_TO_TICKS(250);
+
+  char linha1[17];
+  char linha2[17];
 
   for (;;)
   {
-    lcd.clear();
+    // Copia os valores globais para variáveis locais.
+    // Isso evita ler variáveis volatile várias vezes durante a montagem da tela.
+    float tempLocal = temperatura;
+    float fumacaLocal = fumaca;
+    EstadoSistema estadoLocal = estadoAtual;
+    bool emergenciaLocal = emergenciaManual;
+
+    // Monta a primeira linha com temperatura e fumaça.
+    // O formato %-16s ou o preenchimento com espaços evita sobra de caracteres antigos.
+    snprintf(
+      linha1,
+      sizeof(linha1),
+      "T:%5.1f F:%4.1f",
+      tempLocal,
+      fumacaLocal
+    );
 
     lcd.setCursor(0, 0);
-    lcd.print("T:");
-    lcd.print(temperatura, 1);
+    lcd.print(linha1);
 
-    lcd.print(" F:");
-    lcd.print(fumaca, 1);
-
-    lcd.setCursor(0, 1);
-
-    switch (estadoAtual)
+    // Monta a segunda linha de acordo com o estado do sistema.
+    switch (estadoLocal)
     {
       case NORMAL:
-        lcd.print("NORMAL");
+        snprintf(linha2, sizeof(linha2), "%-16s", "NORMAL");
         break;
 
       case ALERTA:
-        lcd.print("ALERTA FUMACA");
+        snprintf(linha2, sizeof(linha2), "%-16s", "ALERTA FUMACA");
         break;
 
       case INCENDIO:
-        if (emergenciaManual)
+        if (emergenciaLocal)
         {
-          lcd.print("INC MANUAL");
+          snprintf(linha2, sizeof(linha2), "%-16s", "INC MANUAL");
         }
         else
         {
-          lcd.print("INCENDIO");
+          snprintf(linha2, sizeof(linha2), "%-16s", "INCENDIO");
         }
         break;
     }
 
+    lcd.setCursor(0, 1);
+    lcd.print(linha2);
+
+    // Aguarda até o próximo ciclo de atualização do LCD.
     vTaskDelayUntil(&xLastWakeTime, xPeriod);
   }
 }
@@ -451,8 +504,8 @@ void setup()
   xTaskCreate(TaskBotaoEmergencia, "Emergencia", 2048, NULL, 5, NULL);
   xTaskCreate(TaskBotaoReset, "Reset", 2048, NULL, 4, NULL);
   xTaskCreate(TaskTCP, "TCP", 4096, NULL, 3, NULL);
-  xTaskCreate(TaskAtuadores, "Atuadores", 2048, NULL, 3, NULL);
-  xTaskCreate(TaskEstado, "Estado", 4096, NULL, 2, NULL);
+  xTaskCreate(TaskEstado, "Estado", 4096, NULL, 3, NULL);
+  xTaskCreate(TaskAtuadores, "Atuadores", 2048, NULL, 2, NULL);
   xTaskCreate(TaskLCD, "LCD", 4096, NULL, 1, NULL);
 }
 
