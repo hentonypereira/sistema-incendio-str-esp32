@@ -11,8 +11,8 @@ import argparse # Biblioteca que permite passar argumentos pelo terminal.
 
 # Dicionário de simulações
 SIMULACOES = {
-    "flaming": "flaming_fire.csv",
-    "smoldering": "smoldering_fire.csv"
+    "flaming": "data/flaming_fire.csv",
+    "smoldering": "data/smoldering_fire.csv"
 }
 
 
