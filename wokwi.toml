@@ -4,8 +4,14 @@ version = 1
 firmware = ".pio/build/esp32dev/firmware.bin"
 elf = ".pio/build/esp32dev/firmware.elf"
 
+# Porta usada pelo injetor.py para enviar os dados FDS ao ESP32.
+# O injetor.py conecta em localhost:8080.
 [[net.forward]]
 from = "localhost:8080"
 to = "target:8080"
 
-#target: dispositivo simulado, nesse caso é o ESP32
+# Porta usada pelo ESP32 para enviar métricas das tasks ao logger_tasks.py.
+# O logger_tasks.py conecta em localhost:8081.
+[[net.forward]]
+from = "localhost:8081"
+to = "target:8081"
