@@ -625,7 +625,7 @@ void TaskLoggerMetricas(void *pvParameters)
 
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
-  // Envia um resumo das metricas a cada 1 segundo.
+  // Envia um resumo das metricas a cada 200 ms.
   const TickType_t xPeriod = pdMS_TO_TICKS(200);
 
   for (;;)
